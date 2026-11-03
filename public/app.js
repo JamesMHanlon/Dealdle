@@ -217,27 +217,34 @@ async function renderLeaderboard() {
 async function renderBadges() {
   const list = Object.values(badgeInfo).sort((a, b) => a.score - b.score);
   const tiers = ["All", "Common", "Uncommon", "Rare", "Epic", "Anomaly", "Mythic"];
+  let owned = {};
+  if (me) try { owned = (await api("/api/profile?name=" + encodeURIComponent(me.name))).collection || {}; } catch {}
+  const ownTabs = me ? `<div class="tabs" style="margin:0">${["All", "Collected", "Missing"].map(t => `<button data-own="${t}" class="${t === "All" ? "on" : ""}">${t}</button>`).join("")}</div>` : "";
   view.innerHTML = `<h1>Badges</h1><p class="muted">${fmt(list.length)} badges. EP is based on how often a badge shows up in a random seven-card deal.
     Badges in the same family don't stack: only the best one scores.</p>
     <div class="row" style="justify-content:flex-start;margin-bottom:12px"><input id="bsearch" placeholder="Search badges…" style="flex:1;min-width:180px">
-      <div class="tabs" style="margin:0">${tiers.map(t => `<button data-tier="${t}" class="${t === "All" ? "on" : ""}">${t}</button>`).join("")}</div></div>
+      <div class="tabs" style="margin:0">${tiers.map(t => `<button data-tier="${t}" class="${t === "All" ? "on" : ""}">${t}</button>`).join("")}</div>${ownTabs}</div>
     <p class="small muted" id="bcount"></p>
-    <div class="collection" id="blist">${list.map(b => `<div class="bcard" data-tier="${b.rarity}" data-text="${esc((b.name + " " + b.desc).toLowerCase())}"><span class="e">${b.emoji}</span><div>
+    <div class="collection" id="blist">${list.map(b => `<div class="bcard" data-tier="${b.rarity}" data-own="${owned[b.id] ? 1 : 0}" data-text="${esc((b.name + " " + b.desc).toLowerCase())}"><span class="e">${b.emoji}</span><div>
       <div class="t">${esc(b.name)} <span class="chip ${b.rarity}" style="padding:1px 6px;font-size:11px">${b.rarity}</span></div>
-      <div class="d">${esc(b.desc)}</div><div class="d mono">${fmt(b.score)} EP · ${pctText(b.p)}</div></div></div>`).join("")}</div>`;
-  let tier = "All";
+      <div class="d">${esc(b.desc)}</div><div class="d mono">${fmt(b.score)} EP · ${pctText(b.p)}${owned[b.id] ? ` · ✓ ×${owned[b.id]}` : ""}</div></div></div>`).join("")}</div>`;
+  let tier = "All", own = "All";
   const filter = () => {
     const q = $("#bsearch").value.trim().toLowerCase();
     let n = 0;
     for (const el of $("#blist").children) {
-      const show = (tier === "All" || el.dataset.tier === tier) && (!q || el.dataset.text.includes(q));
+      const show = (tier === "All" || el.dataset.tier === tier) && (!q || el.dataset.text.includes(q))
+        && (own === "All" || (el.dataset.own === "1") === (own === "Collected"));
       el.hidden = !show; n += show;
     }
-    $("#bcount").textContent = `Showing ${fmt(n)}`;
+    $("#bcount").textContent = `Showing ${fmt(n)}` + (me ? ` · you have ${fmt(list.filter(b => owned[b.id]).length)} of ${fmt(list.length)}` : "");
   };
   $("#bsearch").oninput = filter;
   view.querySelectorAll("[data-tier]").forEach(b => b.tagName === "BUTTON" && (b.onclick = () => {
     tier = b.dataset.tier; view.querySelectorAll("button[data-tier]").forEach(x => x.classList.toggle("on", x === b)); filter();
+  }));
+  view.querySelectorAll("button[data-own]").forEach(b => (b.onclick = () => {
+    own = b.dataset.own; view.querySelectorAll("button[data-own]").forEach(x => x.classList.toggle("on", x === b)); filter();
   }));
   filter();
 }
