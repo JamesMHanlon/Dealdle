@@ -53,22 +53,18 @@ function countdown(ms) {
 
 function shareText(r) {
   const suits = { S: "♠", H: "♥", D: "♦", C: "♣" };
-  const tier = { Trash: "🗑️", Common: "⚪", Uncommon: "🟢", Rare: "🔵", Epic: "🟣", Anomaly: "🌸", Mythic: "🌟" };
-  const cards = r.final.map(c => "[" + Engine.RANKS[c % 13] + suits[Engine.SUITS[Engine.suit(c)]] + "]").join(" ");
-  const date = new Date(r.day + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-  const scoring = [...new Map(r.badges.filter(b => b.scoring).map(b => {
-    const i = badgeInfo[b.id] || {};
-    return [i.name || b.id, `${i.emoji || "•"} ${i.name || b.id}`];
-  })).values()];
-  const top = scoring.slice(0, 3);
-  const more = scoring.length > 3 ? `  +${scoring.length - 3} more` : "";
-  return [
-    `🃏 Dealdle · ${date}`,
-    cards,
-    `${tier[r.rarity] || ""} ${r.rarity.toUpperCase()} · ${fmt(r.total)} EP`,
-    top.join("\n") + more,
-    location.host,
-  ].join("\n");
+  const sq = { Trash: "⬛", Common: "⬜", Uncommon: "🟩", Rare: "🟦", Epic: "🟪", Anomaly: "🟧", Mythic: "🟨" };
+  const cards = r.final.map(c => Engine.RANKS[c % 13] + suits[Engine.SUITS[Engine.suit(c)]]).join(" ");
+  const top = 100 - Engine.percentile(r.total);
+  const topText = top <= 0 ? "" : ` • Top ${top < 1 ? +top.toFixed(2) : Math.ceil(top)}%`;
+  const seen = new Set();
+  const badges = r.badges.filter(b => b.scoring).sort((a, b) => b.score - a.score).filter(b => {
+    const name = (badgeInfo[b.id] || {}).name || b.id;
+    return !seen.has(name) && seen.add(name);
+  });
+  const lines = badges.slice(0, 3).map(b => { const i = badgeInfo[b.id] || {}; return `${sq[i.rarity] || "⬜"} ${i.emoji || ""} ${i.name || b.id}`; });
+  if (badges.length > 3) lines.push(`+${badges.length - 3} more`);
+  return [`Dealdle 🃏 ${cards}`, "", `${sq[r.rarity]} ${r.rarity.toUpperCase()}${topText}`, "", ...lines, "", `${fmt(r.total)} EP`, location.origin + "/"].join("\n");
 }
 
 // ---------- play ----------

@@ -126,7 +126,7 @@
     for (let s = 0; s < 4; s++) {
       add(`flush_${s}`, `${SS[s]} Flush`, SY[s], `Five or more ${SN[s]}.`, f => f.suitCount[s] >= 5, { family: "flush_suit", p: pGe(0.25, 5) });
       add(`six_${s}`, `Six ${SN[s]}`, SY[s], `Six or more ${SN[s]}.`, f => f.suitCount[s] >= 6, { family: "flush_suit", p: pGe(0.25, 6) });
-      add(`seven_${s}`, ["Gravedigger", "Lovesick", "Diamond Mine", "Clover Field"][s], SY[s], `Seven ${SN[s]}.`, f => f.suitCount[s] === 7, { family: "flush_suit", p: pEq(0.25, 7) });
+      if (s >= 2) add(`seven_${s}`, ["Gravedigger", "Lovesick", "Diamond Mine", "Clover Field"][s], SY[s], `Seven ${SN[s]}.`, f => f.suitCount[s] === 7, { family: "flush_suit", p: pEq(0.25, 7) });
       for (let k = 0; k <= 6; k++) {
         if (s === 0 && k === 0) continue;
         add(`suit${k}_${s}`, k === 0 ? `No ${SN[s]}` : `Exactly ${k} ${k === 1 ? SS[s] : SN[s]}`, SY[s],
