@@ -1,0 +1,14 @@
+# Render blueprint: New → Blueprint → pick this repo. Render asks for DATABASE_URL (your Neon connection string).
+services:
+  - type: web
+    name: dealdle
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/badges
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

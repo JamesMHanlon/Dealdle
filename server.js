@@ -1,39 +1,25 @@
 "use strict";
-// Dealdle server: serves the game and the API. No dependencies, Node 18+.
-// Data is kept in DATA_DIR/db.json (default ./data). Point DATA_DIR at a persistent disk when hosting.
+// Dealdle server: serves the game and the API. Node 18+.
+// Data lives in Postgres when DATABASE_URL is set, otherwise in ./data/db.json (see storage.js).
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const Engine = require("./shared/engine");
+const store = require("./storage");
 Engine.setStats(require("./shared/stats.json"));
 
 const PORT = Number(process.env.PORT) || 3000;
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
 const SECURE_COOKIE = process.env.NODE_ENV === "production";
 const POEM_MAX = 140;
 
 // ---------- storage ----------
-let db = { users: {}, sessions: {}, rolls: {}, friends: [] };
-if (fs.existsSync(DB_FILE)) db = { ...db, ...JSON.parse(fs.readFileSync(DB_FILE, "utf8")) };
-fs.mkdirSync(DATA_DIR, { recursive: true });
-
-let saveTimer = null;
-function save() {
-  if (saveTimer) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    const tmp = DB_FILE + ".tmp";
-    fs.writeFileSync(tmp, JSON.stringify(db));
-    fs.renameSync(tmp, DB_FILE);
-  }, 250);
-}
+let db = null; // loaded before the server starts listening
+const save = () => store.save();
 
 // roll lookup: "u:<userId>|<day>" or "g:<guestId>|<day>" -> rollId
 const rollKey = new Map();
 const keyOf = (r) => (r.owner ? "u:" + r.owner : "g:" + r.guest) + "|" + r.day;
-for (const r of Object.values(db.rolls)) rollKey.set(keyOf(r), r.id);
 
 // ---------- helpers ----------
 const id = (n = 12) => crypto.randomBytes(n).toString("base64url");
@@ -105,7 +91,9 @@ function readBody(req) {
 // Simple per-IP limiter for sign-in attempts.
 const attempts = new Map();
 function limit(req, max = 10, windowMs = 60_000) {
-  const ip = req.socket.remoteAddress, now = Date.now();
+  // behind a host's proxy the real client is the first X-Forwarded-For entry
+  const fwd = SECURE_COOKIE && String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const ip = fwd || req.socket.remoteAddress, now = Date.now();
   const a = (attempts.get(ip) || []).filter(t => now - t < windowMs);
   if (a.length >= max) fail(429, "Too many attempts. Wait a minute and try again.");
   a.push(now); attempts.set(ip, a);
@@ -311,7 +299,7 @@ function serveStatic(req, res, pathname) {
   });
 }
 
-http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   if (!url.pathname.startsWith("/api/")) return serveStatic(req, res, decodeURIComponent(url.pathname));
   const handler = routes[req.method + " " + url.pathname];
@@ -330,4 +318,13 @@ http.createServer(async (req, res) => {
     if (!(e instanceof HttpError)) console.error(e);
     send(res, e.status || 500, { error: e instanceof HttpError ? e.message : "Server error" });
   }
-}).listen(PORT, () => console.log(`Dealdle on http://localhost:${PORT}`));
+});
+
+store.load().then(loaded => {
+  db = loaded;
+  for (const r of Object.values(db.rolls)) rollKey.set(keyOf(r), r.id);
+  server.listen(PORT, () => console.log(`Dealdle on http://localhost:${PORT} (data: ${store.kind})`));
+}).catch(e => { console.error("Could not load data:", e.message); process.exit(1); });
+
+// Hosts stop idle servers with SIGTERM; write any pending changes first.
+for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => store.flush().finally(() => process.exit(0)));
