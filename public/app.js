@@ -52,10 +52,23 @@ function countdown(ms) {
 }
 
 function shareText(r) {
-  const suitsEmoji = { S: "♠️", H: "♥️", D: "♦️", C: "♣️" };
-  const cards = r.final.map(c => Engine.RANKS[c % 13] + suitsEmoji[Engine.SUITS[Engine.suit(c)]]).join(" ");
-  const top = r.badges.filter(b => b.scoring).slice(0, 4).map(b => (badgeInfo[b.id] || {}).emoji).join("");
-  return `Dealdle ${r.day}\n${cards}\n${fmt(r.total)} EP · ${r.rarity} ${top}\n${location.origin}`;
+  const suits = { S: "♠", H: "♥", D: "♦", C: "♣" };
+  const tier = { Trash: "🗑️", Common: "⚪", Uncommon: "🟢", Rare: "🔵", Epic: "🟣", Anomaly: "🌸", Mythic: "🌟" };
+  const cards = r.final.map(c => "[" + Engine.RANKS[c % 13] + suits[Engine.SUITS[Engine.suit(c)]] + "]").join(" ");
+  const date = new Date(r.day + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const scoring = [...new Map(r.badges.filter(b => b.scoring).map(b => {
+    const i = badgeInfo[b.id] || {};
+    return [i.name || b.id, `${i.emoji || "•"} ${i.name || b.id}`];
+  })).values()];
+  const top = scoring.slice(0, 3);
+  const more = scoring.length > 3 ? `  +${scoring.length - 3} more` : "";
+  return [
+    `🃏 Dealdle · ${date}`,
+    cards,
+    `${tier[r.rarity] || ""} ${r.rarity.toUpperCase()} · ${fmt(r.total)} EP`,
+    top.join("\n") + more,
+    location.host,
+  ].join("\n");
 }
 
 // ---------- play ----------
