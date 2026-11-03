@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dealdle</title>
+  <meta name="description" content="One hand per day. Hold, draw, and collect badges.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🂡</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a href="#/" class="logo">Deal<span>dle</span></a>
+    <nav>
+      <a href="#/leaderboard">Leaderboard</a>
+      <a href="#/badges">Badges</a>
+      <a href="#/friends" id="nav-friends">Friends</a>
+      <a href="#/about">About</a>
+    </nav>
+    <div id="account"></div>
+  </header>
+  <main id="view"></main>
+
+  <dialog id="auth">
+    <form id="auth-form" method="dialog">
+      <h2 id="auth-title">Sign in</h2>
+      <label>Username <input name="username" autocomplete="username" required maxlength="20"></label>
+      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="error" id="auth-error"></p>
+      <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+      <p class="muted small"><a href="#" id="auth-switch">No account? Sign up</a></p>
+      <button class="close" type="button" id="auth-close" aria-label="Close">×</button>
+    </form>
+  </dialog>
+  <div id="toast" role="status"></div>
+
+  <script src="/shared/engine.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

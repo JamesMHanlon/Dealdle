@@ -1,0 +1,14 @@
+{
+  "name": "dealdle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A daily seven-card hand: hold, draw once, collect badges. Accounts, friends, leaderboards and poems.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "calibrate": "node tools/calibrate.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
