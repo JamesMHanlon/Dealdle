@@ -64,7 +64,7 @@ function shareText(r) {
   });
   const lines = badges.slice(0, 3).map(b => { const i = badgeInfo[b.id] || {}; return `${sq[i.rarity] || "⬜"} ${i.emoji || ""} ${i.name || b.id}`; });
   if (badges.length > 3) lines.push(`+${badges.length - 3} more`);
-  return [`Dealdle 🃏 ${cards}`, "", `${sq[r.rarity]} ${r.rarity.toUpperCase()}${topText}`, "", ...lines, "", `${fmt(r.total)} EP`, location.origin + "/"].join("\n");
+  return [`Dealdle 🃏 ${cards}`, "", `${sq[r.rarity]} ${r.rarity.toUpperCase()}${topText}`, ...(r.poem ? ["", `“${r.poem}”`] : []), "", ...lines, "", `${fmt(r.total)} EP`, location.origin + "/"].join("\n");
 }
 
 // ---------- play ----------
